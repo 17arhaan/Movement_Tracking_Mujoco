@@ -82,16 +82,24 @@ This script uses Matplotlib to create visual representations of the tracked move
 ## Project Structure
 
 ```
-Movement_Tracking_Mujoco/
-├── data/                   # Folder for storing simulation outputs and logs
-├── models/                 # Contains MuJoCo XML model files
-├── scripts/                # Additional scripts for analysis and visualization
-├── main.py                 # Main script to run the simulation and tracking
-├── visualize.py            # Script for generating visualizations from tracked data
-├── requirements.txt        # Python dependencies
-└── README.md               # This file
+human_motion_tracking/
+├── backend/                  # Python backend for LSTM and MuJoCo
+│   ├── motion_tracker.py     # Motion tracking logic
+│   ├── lstm_model.py         # LSTM model definition and training
+│   ├── mujoco_sim.py         # MuJoCo simulation with humanoid.xml
+│   ├── api.py                # Flask API to connect backend to frontend
+│   └── requirements.txt      # Python dependencies
+├── frontend/                 # React frontend for GUI
+│   ├── src/
+│   │   ├── App.js           # Main React component
+│   │   ├── MotionControl.js  # Component for controlling motion and simulation
+│   │   ├── Visualizer.js    # Component for visualizing MuJoCo simulation
+│   │   └── index.js         # React entry point
+│   ├── public/
+│   │   └── index.html       # HTML template
+│   └── package.json         # Node.js dependencies
+└── README.md                # Project documentation
 ```
-
 ## Contributing
 
 Contributions are welcome! Please fork the repository and submit pull requests. For major changes, please open an issue first to discuss what you would like to change. Guidelines:
