@@ -1,7 +1,8 @@
 
+
 # Movement Tracking Mujoco
 
-Movement Tracking Mujoco is a project that demonstrates how to use the [MuJoCo](https://mujoco.org/) physics engine along with Python to simulate and track the movement of a humanoid model. This project is designed for researchers and developers interested in robotics, biomechanics, or simulation-based movement analysis.
+Movement Tracking Mujoco is a project that demonstrates how to use the [MuJoCo](https://mujoco.org/) physics engine with Python and React to simulate, track, and visualize humanoid movement. It integrates motion tracking, LSTM-based prediction, and an interactive GUI, making it ideal for researchers and developers in robotics, biomechanics, or machine learning.
 
 ## Table of Contents
 
@@ -11,27 +12,32 @@ Movement Tracking Mujoco is a project that demonstrates how to use the [MuJoCo](
 - [Installation](#installation)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
+- [Examples](#examples)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
 
 ## Overview
 
-This project uses a humanoid model provided by MuJoCo to simulate realistic human movement. It tracks various movement metrics and provides visualization tools to analyze performance over time. The simulation can be extended to support custom movements, control algorithms, or even reinforcement learning experiments.
+This project simulates a humanoid model (e.g., `humanoid.xml`) using MuJoCo, tracks its motion, and employs an LSTM model to predict or analyze movement sequences. A React-based GUI allows users to interact with the simulation, load data, train models, and visualize results in real-time or post-processed formats.
 
 ## Features
 
-- **Humanoid Simulation:** Leverage MuJoCo’s high-performance physics engine to simulate a humanoid model.
-- **Movement Tracking:** Record and analyze joint positions, velocities, and other movement metrics.
-- **Visualization:** Generate plots and animations to visualize the movement dynamics.
-- **Modular Codebase:** Easy to extend and integrate with additional sensors or control systems.
+- **Humanoid Simulation:** Realistic movement simulation using MuJoCo.
+- **Motion Tracking:** Captures joint angles, velocities, and other metrics.
+- **LSTM Prediction:** Trains an LSTM model for motion forecasting or classification.
+- **Interactive GUI:** React frontend for controlling and visualizing the simulation.
+- **Visualization:** Renders MuJoCo scenes and generates Matplotlib plots.
+- **Extensibility:** Modular design for custom models, sensors, or algorithms.
 
 ## Requirements
 
-- **Python 3.7+**  
-- **MuJoCo** (installation details at [MuJoCo.org](https://mujoco.org/))
+- **Python 3.7+**
+- **MuJoCo** (see [installation guide](https://mujoco.org/docs/installation.html))
 - **mujoco-py** (Python bindings for MuJoCo)
-- **NumPy**, **Matplotlib**, and other dependencies as listed in `requirements.txt`
+- **Node.js 16+ and npm** (for React frontend)
+- **Python Dependencies**: `numpy`, `tensorflow`, `flask`, `matplotlib`, `pandas` (listed in `backend/requirements.txt`)
+- **Node.js Dependencies**: `react`, `react-dom` (listed in `frontend/package.json`)
 
 ## Installation
 
@@ -42,78 +48,154 @@ This project uses a humanoid model provided by MuJoCo to simulate realistic huma
    cd Movement_Tracking_Mujoco
    ```
 
-2. **Set Up a Virtual Environment (Recommended)**
+2. **Set Up the Backend**
 
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
-   ```
+   - Install MuJoCo and configure your license (see [MuJoCo docs](https://mujoco.org/docs/installation.html)).
+   - Set up a virtual environment:
+     ```bash
+     python -m venv venv
+     source venv/bin/activate  # On Windows: venv\Scripts\activate
+     ```
+   - Install Python dependencies:
+     ```bash
+     pip install -r backend/requirements.txt
+     ```
 
-3. **Install Dependencies**
+3. **Set Up the Frontend**
 
-   Ensure you have MuJoCo installed and licensed on your system. Then, install the required Python packages:
+   - Navigate to the frontend directory:
+     ```bash
+     cd frontend
+     ```
+   - Install Node.js dependencies:
+     ```bash
+     npm install
+     ```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+4. **Verify Setup**
+
+   Ensure `humanoid.xml` is placed in `backend/` or adjust paths in `mujoco_sim.py`.
 
 ## Usage
 
-### Running the Simulation
+### Running the Backend
 
-To start the simulation and tracking, run:
+Launch the Flask API to manage simulation and LSTM processing:
 
 ```bash
-python main.py
+cd backend
+python api.py
 ```
 
-The script will initialize the MuJoCo simulation, load the humanoid model, and start tracking movement metrics. You can customize the simulation parameters and tracking options within the code.
+The server runs at `http://localhost:5000`.
+
+### Running the Frontend
+
+Start the React GUI:
+
+```bash
+cd frontend
+npm start
+```
+
+Visit `http://localhost:3000` to access the interface.
+
+### Running Standalone Simulation (Optional)
+
+To run a standalone MuJoCo simulation without the GUI:
+
+```bash
+cd backend
+python mujoco_sim.py
+```
+
+This renders the humanoid model with dummy joint angles.
+
+### Training the LSTM Model
+
+The GUI’s "Train LSTM" button triggers training via the API. Alternatively, run standalone:
+
+```bash
+cd backend
+python lstm_model.py
+```
+
+Modify `lstm_model.py` to load your dataset.
 
 ### Visualization
 
-After running the simulation, you can generate plots or animations by executing:
+The GUI’s "Simulate Motion" button renders MuJoCo output. For standalone plots:
 
 ```bash
-python visualize.py
+cd backend
+python motion_tracker.py  # Add Matplotlib plotting logic here
 ```
-
-This script uses Matplotlib to create visual representations of the tracked movement data.
 
 ## Project Structure
 
 ```
-human_motion_tracking/
-├── backend/                  # Python backend for LSTM and MuJoCo
-│   ├── motion_tracker.py     # Motion tracking logic
-│   ├── lstm_model.py         # LSTM model definition and training
-│   ├── mujoco_sim.py         # MuJoCo simulation with humanoid.xml
-│   ├── api.py                # Flask API to connect backend to frontend
+Movement_Tracking_Mujoco/
+├── backend/                  # Python backend for simulation and ML
+│   ├── motion_tracker.py     # Tracks and preprocesses motion data
+│   ├── lstm_model.py         # Defines and trains the LSTM model
+│   ├── mujoco_sim.py         # Runs MuJoCo simulation with humanoid.xml
+│   ├── api.py                # Flask API for backend-frontend communication
 │   └── requirements.txt      # Python dependencies
 ├── frontend/                 # React frontend for GUI
 │   ├── src/
 │   │   ├── App.js           # Main React component
-│   │   ├── MotionControl.js  # Component for controlling motion and simulation
-│   │   ├── Visualizer.js    # Component for visualizing MuJoCo simulation
+│   │   ├── MotionControl.js  # Controls for motion and simulation
+│   │   ├── Visualizer.js    # Displays MuJoCo simulation output
 │   │   └── index.js         # React entry point
 │   ├── public/
 │   │   └── index.html       # HTML template
 │   └── package.json         # Node.js dependencies
+├── humanoid.xml             # MuJoCo humanoid model (optional placement)
+├── LICENSE.md               # MIT License file
 └── README.md                # Project documentation
 ```
+
+## Examples
+
+### Example 1: Simulate Random Motion
+- Start the backend (`python backend/api.py`).
+- Open the GUI (`npm start` in `frontend/`).
+- Click "Simulate Motion" to render a random humanoid pose.
+
+### Example 2: Train LSTM on Dummy Data
+- Run `python backend/lstm_model.py` standalone to train on random sequences.
+- Check the console for training progress and saved model (`lstm_model.h5`).
+
+### Example 3: Visualize Motion Data
+- Modify `motion_tracker.py` to output joint angles to a CSV.
+- Use Matplotlib in a custom script (e.g., `visualize.py`):
+  ```python
+  import matplotlib.pyplot as plt
+  import pandas as pd
+  data = pd.read_csv("motion_data.csv")
+  plt.plot(data["time"], data["joint_1"])
+  plt.show()
+  ```
+
 ## Contributing
 
-Contributions are welcome! Please fork the repository and submit pull requests. For major changes, please open an issue first to discuss what you would like to change. Guidelines:
+Contributions are encouraged! To contribute:
 
-- Follow the coding style used in the project.
-- Write clear and descriptive commit messages.
-- Include documentation for any new features or changes.
+1. Fork the repository.
+2. Create a branch (`git checkout -b feature/your-feature`).
+3. Commit changes (`git commit -m "Add your feature"`).
+4. Push to the branch (`git push origin feature/your-feature`).
+5. Submit a pull request.
+
+For significant changes, open an issue first. Adhere to the project’s coding style and document new features.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.
+This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.
 
 ## Contact
 
-For any questions or feedback, please open an issue or contact [17arhaan.connect@gmail.com](mailto:17arhaan.connect@gmail.com).
+For inquiries or feedback, open an issue on GitHub or email [17arhaan.connect@gmail.com](mailto:17arhaan.connect@gmail.com).
 
 ---
+
