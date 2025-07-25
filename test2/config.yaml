@@ -1,0 +1,15 @@
+# file paths
+xml_path: "humanoid.xml"
+csv_path: "expert_walk.csv"
+
+# RL hyperparameters
+total_timesteps: 1000000
+learning_rate: 0.0003
+gamma: 0.99
+batch_size: 64
+n_steps: 2048
+
+# reward weights
+w_vel: 1.0
+w_upright: 0.5
+w_energy: 0.001
