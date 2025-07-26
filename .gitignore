@@ -252,3 +252,6 @@ Thumbs.db
 # MuJoCo specific
 *.xml
 mujoco_logs/ 
+models/
+*/models/
+**/models/
