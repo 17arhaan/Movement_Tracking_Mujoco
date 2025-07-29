@@ -303,6 +303,67 @@ class CSVInputHandler:
             print(f"❌ Error loading motion capture data: {e}")
             return {}
 
+    def validate_csv(self, csv_path: str, csv_type: str) -> Dict:
+        """
+        Validate CSV file format and content, returning detailed results.
+        
+        Args:
+            csv_path: Path to the CSV file to validate
+            csv_type: Expected type of CSV data
+            
+        Returns:
+            Dictionary with validation results including 'valid', 'columns', 'row_count', 'errors'
+        """
+        try:
+            # Check if file exists
+            if not os.path.exists(csv_path):
+                return {
+                    'valid': False,
+                    'errors': [f"File not found: {csv_path}"],
+                    'columns': [],
+                    'row_count': 0
+                }
+            
+            # Try to read the CSV
+            df = pd.read_csv(csv_path)
+            
+            # Get basic info
+            columns = list(df.columns)
+            row_count = len(df)
+            errors = []
+            
+            # Validate based on CSV type
+            if csv_type in self.column_mappings:
+                required_cols = self.column_mappings[csv_type]['required']
+                missing_cols = [col for col in required_cols if col not in columns]
+                
+                if missing_cols:
+                    errors.append(f"Missing required columns: {missing_cols}")
+            
+            # Additional validation checks
+            if row_count == 0:
+                errors.append("CSV file is empty")
+            
+            # Check for completely empty columns
+            empty_cols = [col for col in columns if df[col].isna().all()]
+            if empty_cols:
+                errors.append(f"Columns with no data: {empty_cols}")
+            
+            return {
+                'valid': len(errors) == 0,
+                'columns': columns,
+                'row_count': row_count,
+                'errors': errors
+            }
+            
+        except Exception as e:
+            return {
+                'valid': False,
+                'errors': [f"Error reading CSV: {str(e)}"],
+                'columns': [],
+                'row_count': 0
+            }
+
     def validate_csv_format(self, csv_path: str, csv_type: str) -> bool:
         """
         Validate that CSV has required columns for the specified type.
@@ -449,63 +510,107 @@ def load_csv_data(csv_path: str, csv_type: str = None) -> Dict:
         print(f"❌ Unsupported CSV type: {csv_type}")
         return {}
 
-def run_anthropometric_analysis_with_csv(model_name: str, 
+def run_anthropometric_analysis_with_csv(model_path: str, 
                                        algorithm: str,
                                        environment: str,
-                                       csv_inputs: Dict[str, str] = None,
-                                       steps: int = 1000) -> Dict:
+                                       csv_data = None,
+                                       csv_type_or_steps = None) -> Dict:
     """
     Run anthropometric analysis with custom CSV inputs.
     
     Args:
-        model_name: Name of the model to analyze
+        model_path: Full path to the model file (e.g., "models/A2C_8125000.zip")
         algorithm: RL algorithm (A2C, SAC, TD3)
         environment: Environment name
-        csv_inputs: Dictionary mapping input types to CSV file paths
-                   e.g., {'anthropometric_params': 'params.csv', 'trajectory_data': 'ref_traj.csv'}
-        steps: Number of simulation steps
+        csv_data: Loaded CSV data (pandas DataFrame, dict, or dict of multiple types)
+        csv_type_or_steps: Either CSV type string or steps integer (for backwards compatibility)
         
     Returns:
         Analysis results dictionary
     """
-    from anthropometric_analysis import AnthropometricAnalyzer
+    from anthropometric_analysis import AnthropometricAnalyzer, extract_trajectory_data_from_env
+    
+    # Handle backwards compatibility: if csv_type_or_steps is an integer, it's steps
+    if isinstance(csv_type_or_steps, int):
+        steps = csv_type_or_steps
+        csv_type = None
+    else:
+        csv_type = csv_type_or_steps
+        steps = 1000  # default
+    
+    # Extract model name from path for display
+    model_name = model_path.split('/')[-1].replace('.zip', '') if '/' in model_path else model_path.replace('.zip', '')
     
     print(f"🔬 ENHANCED ANTHROPOMETRIC ANALYSIS WITH CSV INPUTS")
     print(f"{'='*80}")
     print(f"📊 Model: {model_name}")
     print(f"🤖 Algorithm: {algorithm}")
     print(f"🎮 Environment: {environment}")
-    print(f"📄 CSV Inputs: {len(csv_inputs) if csv_inputs else 0}")
-    print(f"{'='*80}")
     
-    # Load CSV inputs
+    # Handle different CSV data formats
     loaded_data = {}
-    if csv_inputs:
-        for input_type, csv_path in csv_inputs.items():
-            print(f"\n📄 Loading {input_type} from {csv_path}")
-            data = load_csv_data(csv_path, input_type)
-            if data:
-                loaded_data[input_type] = data
+    if csv_data is not None:
+        if isinstance(csv_data, dict):
+            # Check if it's a dictionary of multiple CSV types (UI format)
+            if any(isinstance(v, (dict, pd.DataFrame)) for v in csv_data.values()):
+                loaded_data = csv_data
+                print(f"📄 CSV Inputs: {len(loaded_data)} types loaded")
+            else:
+                # Single CSV data with specified type
+                if csv_type:
+                    loaded_data[csv_type] = csv_data
+                    print(f"📄 CSV Inputs: 1 ({csv_type})")
+                else:
+                    loaded_data['unknown'] = csv_data
+                    print(f"📄 CSV Inputs: 1 (type unknown)")
+        else:
+            # DataFrame or other format
+            if csv_type:
+                loaded_data[csv_type] = csv_data
+                print(f"📄 CSV Inputs: 1 ({csv_type})")
+            else:
+                loaded_data['data'] = csv_data
+                print(f"📄 CSV Inputs: 1")
+    else:
+        print(f"📄 CSV Inputs: 0")
+    
+    print(f"{'='*80}")
     
     # Create analyzer with custom data
     analyzer = AnthropometricAnalyzer()
     
-    # Override default parameters with CSV data if available
-    if 'anthropometric_params' in loaded_data:
-        custom_params = loaded_data['anthropometric_params']
-        if 'basic_params' in custom_params:
-            analyzer.anthropometric_data.update(custom_params['basic_params'])
-        if 'segment_lengths' in custom_params:
-            analyzer.anthropometric_data['segment_lengths'].update(custom_params['segment_lengths'])
-        print(f"✅ Applied custom anthropometric parameters from CSV")
+    # Apply CSV data if available
+    for data_type, data in loaded_data.items():
+        print(f"\n📄 Processing {data_type} data...")
+        try:
+            if data_type == 'anthropometric_params':
+                # Apply custom anthropometric parameters
+                if isinstance(data, dict):
+                    if 'basic_params' in data:
+                        analyzer.anthropometric_data.update(data['basic_params'])
+                        print(f"✅ Applied {len(data['basic_params'])} basic parameters")
+                    if 'segment_lengths' in data:
+                        analyzer.anthropometric_data['segment_lengths'].update(data['segment_lengths'])
+                        print(f"✅ Applied {len(data['segment_lengths'])} segment lengths")
+                    if 'joint_ranges' in data:
+                        if 'joint_ranges' not in analyzer.anthropometric_data:
+                            analyzer.anthropometric_data['joint_ranges'] = {}
+                        analyzer.anthropometric_data['joint_ranges'].update(data['joint_ranges'])
+                        print(f"✅ Applied {len(data['joint_ranges'])} joint ranges")
+                    print(f"✅ Applied custom anthropometric parameters")
+                else:
+                    print(f"⚠️ Anthropometric data format not recognized")
+            else:
+                print(f"✅ Loaded {data_type} data")
+        except Exception as e:
+            print(f"❌ Error processing {data_type} data: {e}")
     
     # Run the standard analysis with loaded model
     try:
         import gymnasium as gym
         from stable_baselines3 import SAC, TD3, A2C
         
-        model_path = f"models/{model_name}.zip"
-        
+        # Use the model_path directly (don't add "models/" prefix)
         if algorithm == 'SAC':
             model = SAC.load(model_path)
         elif algorithm == 'TD3':
@@ -517,45 +622,34 @@ def run_anthropometric_analysis_with_csv(model_name: str,
         
         env = gym.make(environment, render_mode=None)
         
-        # Run simulation and collect data
-        obs, _ = env.reset()
-        trajectory_data = []
-        joint_data = []
-        
-        for step in range(steps):
-            action, _ = model.predict(obs, deterministic=True)
-            obs, reward, terminated, truncated, info = env.step(action)
-            
-            # Collect trajectory and joint data
-            # This would need to be adapted based on your specific environment
-            # For now, we'll create placeholder data
-            trajectory_data.append({
-                'step': step,
-                'reward': reward,
-                'action': action,
-                'observation': obs
-            })
-            
-            if terminated or truncated:
-                obs, _ = env.reset()
+        # Extract trajectory data using the robust function
+        trajectory_data = extract_trajectory_data_from_env(env, model, steps=steps)
         
         env.close()
         
-        # Perform analysis
-        analysis_results = analyzer.analyze_comprehensive(trajectory_data, loaded_data)
+        # Perform comprehensive analysis
+        analysis_results = analyzer.analyze_anthropometric_compliance(trajectory_data)
         
         # Add CSV comparison results if reference data was provided
         if 'trajectory_data' in loaded_data:
-            comparison_results = analyzer.compare_with_reference(
-                trajectory_data, loaded_data['trajectory_data']
-            )
-            analysis_results['csv_comparison'] = comparison_results
+            try:
+                comparison_results = analyzer.compare_with_reference(
+                    trajectory_data, loaded_data['trajectory_data']
+                )
+                analysis_results['csv_comparison'] = comparison_results
+                print(f"✅ Added CSV trajectory comparison")
+            except Exception as e:
+                print(f"⚠️ CSV comparison failed: {e}")
+        
+        # Calculate overall metrics
+        overall_score = analysis_results.get('overall_score', 0)
+        compliance_level = analysis_results.get('compliance_level', 'Unknown')
         
         # Generate final report
         print(f"\n🔬 CSV-ENHANCED ANALYSIS COMPLETE")
         print(f"{'='*60}")
-        print(f"📊 Overall Score: {analysis_results.get('overall_score', 0):.1f}/100")
-        print(f"📈 Compliance Level: {analysis_results.get('compliance_level', 'Unknown')}")
+        print(f"📊 Overall Score: {overall_score:.1f}/100")
+        print(f"📈 Compliance Level: {compliance_level}")
         
         if 'csv_comparison' in analysis_results:
             csv_score = analysis_results['csv_comparison'].get('similarity_score', 0)
