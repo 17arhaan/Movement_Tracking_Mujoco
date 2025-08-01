@@ -3,13 +3,13 @@
 
 <div align="center">
 
-![Developer Introduction](https://github.com/user-attachments/assets/cf8b2c97-3f41-4e5c-8c26-b4edb7c47e45)
+![Developer Introduction](./assets/images/developer-intro.png)
 
 </div>
 
 <div align="center">
 
-![MuJoCo Logo](https://github.com/user-attachments/assets/8a5fb9ab-8c9f-4e5f-8c26-c4d5e6a8f123)
+![MuJoCo Logo](./assets/images/mujoco-logo.png)
 
 ### Advanced Humanoid Movement Simulation & Prediction System
 
