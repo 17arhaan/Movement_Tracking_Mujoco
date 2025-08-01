@@ -1,7 +1,0 @@
-mujoco>=2.1.5
-gymnasium[mujoco]>=1.0.0
-stable-baselines3>=1.6.0
-pandas>=1.5.0
-numpy>=1.23.0
-pyyaml>=6.0
-tensorboard>=2.12.0
