@@ -9,7 +9,7 @@
 
 <div align="center">
 
-![MuJoCo Logo](./assets/images/mujoco-logo.png)
+![MuJoCo Logo](./assets/images/mujoco-logo.jpg)
 
 ### Advanced Humanoid Movement Simulation & Prediction System
 
