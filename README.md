@@ -3,7 +3,7 @@
 
 <div align="center">
 
-![Developer Introduction](./assets/images/developer-intro.png)
+![Developer Introduction](./assets/images/bg1.png)
 
 </div>
 
