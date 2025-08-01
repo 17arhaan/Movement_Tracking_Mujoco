@@ -255,3 +255,9 @@ mujoco_logs/
 models/
 */models/
 **/models/
+
+*/node_modules/
+**/node_modules/
+
+*/__pycache__/
+**/__pycache__/

@@ -1,7 +1,0 @@
-parameter,value,unit,description,min_range,max_range
-height,1.75,m,Total body height,1.5,2.0
-weight,70.0,kg,Body weight,50.0,120.0
-head_length,0.23,m,Head segment length,0.2,0.3
-torso_length,0.5,m,Torso length,0.4,0.7
-hip_flexion_range,120.0,degrees,Hip flexion ROM,100.0,140.0
-knee_flexion_range,140.0,degrees,Knee flexion ROM,120.0,160.0

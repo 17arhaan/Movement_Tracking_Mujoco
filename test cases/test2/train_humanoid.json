@@ -1,0 +1,1144 @@
+{
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import numpy as np\n",
+        "import yaml\n",
+        "import time\n",
+        "from stable_baselines3 import PPO\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "\n",
+        "with open('config.yaml', 'r') as f:\n",
+        "    config = yaml.safe_load(f)\n",
+        "\n",
+        "demo_states, demo_actions = load_demonstrations(config['csv_path'])\n",
+        "env = HumanoidDemoEnv(config['xml_path'], demo_states, demo_actions, config)\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Load expert demonstrations\n",
+        "demo_states, demo_actions = load_demonstrations(config['csv_path'])\n",
+        "\n",
+        "print(f\"✅ Loaded {len(demo_states)} demonstration steps\")\n",
+        "print(f\"State shape: {demo_states[0].shape}\")\n",
+        "print(f\"Action shape: {demo_actions[0].shape}\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "model = PPO(\"MlpPolicy\", env, verbose=1, tensorboard_log=\"./tensorboard/\")\n",
+        "model.learn(total_timesteps=50000, progress_bar=True)\n",
+        "model.save(\"humanoid_trained_model\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Setup and Imports\n",
+        "import numpy as np\n",
+        "import yaml\n",
+        "import time\n",
+        "from stable_baselines3 import PPO\n",
+        "from stable_baselines3.common.vec_env import DummyVecEnv\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "\n",
+        "# Load configuration\n",
+        "with open('config.yaml', 'r') as f:\n",
+        "    config = yaml.safe_load(f)\n",
+        "\n",
+        "print(\"✅ Imports loaded successfully\")\n",
+        "print(f\"Config: {config}\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Load expert demonstrations\n",
+        "demo_states, demo_actions = load_demonstrations(config['csv_path'])\n",
+        "\n",
+        "print(f\"✅ Loaded {len(demo_states)} demonstration steps\")\n",
+        "print(f\"State shape: {demo_states[0].shape}\")\n",
+        "print(f\"Action shape: {demo_actions[0].shape}\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Create environment\n",
+        "env = HumanoidDemoEnv(config['xml_path'], demo_states, demo_actions, config)\n",
+        "\n",
+        "# Test environment\n",
+        "obs, info = env.reset()\n",
+        "print(f\"✅ Environment created successfully\")\n",
+        "print(f\"Observation shape: {obs.shape}\")\n",
+        "print(f\"Action space: {env.action_space}\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Create PPO model\n",
+        "model = PPO(\n",
+        "    \"MlpPolicy\", \n",
+        "    env,\n",
+        "    learning_rate=3e-4,\n",
+        "    n_steps=2048,\n",
+        "    batch_size=64,\n",
+        "    n_epochs=10,\n",
+        "    gamma=0.99,\n",
+        "    gae_lambda=0.95,\n",
+        "    clip_range=0.2,\n",
+        "    verbose=1,\n",
+        "    tensorboard_log=\"./tensorboard/\"\n",
+        ")\n",
+        "\n",
+        "print(\"✅ PPO model created\")\n",
+        "print(f\"Policy: {model.policy}\")\n",
+        "\n",
+        "# Train the model\n",
+        "print(\"🎯 Starting training...\")\n",
+        "try:\n",
+        "    # Try with progress bar first (requires tqdm and rich)\n",
+        "    model.learn(total_timesteps=50000, progress_bar=True)\n",
+        "except ImportError:\n",
+        "    # Fallback without progress bar if packages not available\n",
+        "    print(\"⚠️ Progress bar not available, training without it...\")\n",
+        "    model.learn(total_timesteps=50000, progress_bar=False)\n",
+        "\n",
+        "# Save the model\n",
+        "model.save(\"humanoid_trained_model\")\n",
+        "print(\"✅ Model trained and saved!\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Test the trained model\n",
+        "print(\"🧪 Testing trained model...\")\n",
+        "\n",
+        "obs, _ = env.reset()\n",
+        "total_reward = 0\n",
+        "\n",
+        "for i in range(1000):\n",
+        "    action, _ = model.predict(obs, deterministic=True)\n",
+        "    obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "    total_reward += reward\n",
+        "    \n",
+        "    if terminated or truncated:\n",
+        "        print(f\"Episode ended at step {i}, total reward: {total_reward}\")\n",
+        "        obs, _ = env.reset()\n",
+        "        total_reward = 0\n",
+        "\n",
+        "print(\"✅ Testing completed\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# View the trained humanoid in action\n",
+        "import subprocess\n",
+        "import sys\n",
+        "import platform\n",
+        "\n",
+        "def view_humanoid_trained():\n",
+        "    \"\"\"Run the trained humanoid with viewer - tries multiple approaches\"\"\"\n",
+        "    \n",
+        "    print(\"🎬 Starting humanoid viewer...\")\n",
+        "    \n",
+        "    # Approach 1: Try direct viewer in Jupyter (may not work on macOS)\n",
+        "    try:\n",
+        "        print(\"🔍 Attempting direct viewer...\")\n",
+        "        env.use_imitation = False  # Use trained policy, not demonstrations\n",
+        "        obs, _ = env.reset()\n",
+        "        \n",
+        "        # Try to render directly\n",
+        "        for i in range(100):  # Short test first\n",
+        "            action, _ = model.predict(obs, deterministic=True)\n",
+        "            obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "            \n",
+        "            try:\n",
+        "                env.render()  # This might work in some cases\n",
+        "                time.sleep(0.02)\n",
+        "            except Exception as render_error:\n",
+        "                print(f\"⚠️ Direct rendering failed: {render_error}\")\n",
+        "                break\n",
+        "                \n",
+        "            if terminated or truncated:\n",
+        "                obs, _ = env.reset()\n",
+        "        \n",
+        "        print(\"✅ Direct viewer worked!\")\n",
+        "        return True\n",
+        "        \n",
+        "    except Exception as e:\n",
+        "        print(f\"❌ Direct viewer failed: {e}\")\n",
+        "        \n",
+        "        # Approach 2: Use subprocess to call mjpython (macOS solution)\n",
+        "        if platform.system() == \"Darwin\":  # macOS\n",
+        "            print(\"🍎 macOS detected - trying mjpython subprocess...\")\n",
+        "            try:\n",
+        "                # Create a temporary script\n",
+        "                script_content = '''\n",
+        "from stable_baselines3 import PPO\n",
+        "import yaml\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "import time\n",
+        "\n",
+        "# Load everything\n",
+        "with open(\"config.yaml\") as f: \n",
+        "    cfg = yaml.safe_load(f)\n",
+        "demo_states, demo_actions = load_demonstrations(cfg[\"csv_path\"])\n",
+        "env = HumanoidDemoEnv(cfg[\"xml_path\"], demo_states, demo_actions, cfg)\n",
+        "model = PPO.load(\"humanoid_trained_model\", env=env)\n",
+        "\n",
+        "# Run with viewer\n",
+        "env.use_imitation = False\n",
+        "obs, _ = env.reset()\n",
+        "print(\"🎬 Viewer window should open now...\")\n",
+        "\n",
+        "for i in range(2000):\n",
+        "    action, _ = model.predict(obs, deterministic=True)\n",
+        "    obs, r, t, tr, _ = env.step(action)\n",
+        "    env.render()\n",
+        "    time.sleep(0.02)\n",
+        "    if t or tr:\n",
+        "        obs, _ = env.reset()\n",
+        "        \n",
+        "print(\"✅ Viewer session completed!\")\n",
+        "'''\n",
+        "                \n",
+        "                with open('temp_viewer.py', 'w') as f:\n",
+        "                    f.write(script_content)\n",
+        "                \n",
+        "                print(\"📱 Launching mjpython viewer (this will open a new window)...\")\n",
+        "                result = subprocess.run(['mjpython', 'temp_viewer.py'], \n",
+        "                                      capture_output=True, text=True, timeout=30)\n",
+        "                \n",
+        "                if result.returncode == 0:\n",
+        "                    print(\"✅ mjpython viewer launched successfully!\")\n",
+        "                    print(\"🎬 Check for the MuJoCo viewer window!\")\n",
+        "                else:\n",
+        "                    print(f\"❌ mjpython failed: {result.stderr}\")\n",
+        "                    raise Exception(\"mjpython not available\")\n",
+        "                    \n",
+        "                # Clean up\n",
+        "                import os\n",
+        "                if os.path.exists('temp_viewer.py'):\n",
+        "                    os.remove('temp_viewer.py')\n",
+        "                    \n",
+        "                return True\n",
+        "                \n",
+        "            except FileNotFoundError:\n",
+        "                print(\"❌ mjpython not found. Install with: pip install mujoco[viewer]\")\n",
+        "            except subprocess.TimeoutExpired:\n",
+        "                print(\"⏰ mjpython viewer timed out - but it might still be running!\")\n",
+        "                return True\n",
+        "            except Exception as subprocess_error:\n",
+        "                print(f\"❌ mjpython subprocess failed: {subprocess_error}\")\n",
+        "        \n",
+        "        # Approach 3: Offscreen rendering with display\n",
+        "        print(\"🖼️ Falling back to offscreen rendering...\")\n",
+        "        try:\n",
+        "            import matplotlib.pyplot as plt\n",
+        "            import mujoco\n",
+        "            \n",
+        "            # Create offscreen renderer\n",
+        "            renderer = mujoco.Renderer(env.model, width=640, height=480)\n",
+        "            \n",
+        "            env.use_imitation = False\n",
+        "            obs, _ = env.reset()\n",
+        "            \n",
+        "            print(\"📸 Rendering frames (this may take a moment)...\")\n",
+        "            frames = []\n",
+        "            \n",
+        "            for i in range(100):  # Render 100 frames\n",
+        "                action, _ = model.predict(obs, deterministic=True)\n",
+        "                obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "                \n",
+        "                # Render frame\n",
+        "                renderer.update_scene(env.data)\n",
+        "                pixels = renderer.render()\n",
+        "                frames.append(pixels)\n",
+        "                \n",
+        "                if terminated or truncated:\n",
+        "                    obs, _ = env.reset()\n",
+        "            \n",
+        "            # Display first frame\n",
+        "            plt.figure(figsize=(10, 8))\n",
+        "            plt.imshow(frames[0])\n",
+        "            plt.title(\"Humanoid Simulation (First Frame)\")\n",
+        "            plt.axis('off')\n",
+        "            plt.show()\n",
+        "            \n",
+        "            print(f\"✅ Rendered {len(frames)} frames successfully!\")\n",
+        "            print(\"💡 First frame displayed above. For animation, use the mjpython method.\")\n",
+        "            \n",
+        "            renderer.close()\n",
+        "            return True\n",
+        "            \n",
+        "        except Exception as render_error:\n",
+        "            print(f\"❌ Offscreen rendering failed: {render_error}\")\n",
+        "    \n",
+        "    return False\n",
+        "\n",
+        "# Run the viewer\n",
+        "success = view_humanoid_trained()\n",
+        "\n",
+        "if not success:\n",
+        "    print(\"\\n🔧 Manual solution:\")\n",
+        "    print(\"Run this in your terminal:\")\n",
+        "    print(\"cd humanoid_model_project/test2\")\n",
+        "    print(\"mjpython viewer_humanoid.py\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Create standalone viewer script\n",
+        "import os\n",
+        "\n",
+        "def create_viewer_script():\n",
+        "    \"\"\"Create a standalone viewer script you can run with mjpython\"\"\"\n",
+        "    script = '''#!/usr/bin/env python3\n",
+        "from stable_baselines3 import PPO\n",
+        "import yaml\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "import time\n",
+        "\n",
+        "print(\"🚀 Loading trained humanoid model...\")\n",
+        "\n",
+        "# Load everything\n",
+        "with open(\"config.yaml\") as f: \n",
+        "    cfg = yaml.safe_load(f)\n",
+        "    \n",
+        "demo_states, demo_actions = load_demonstrations(cfg[\"csv_path\"])\n",
+        "env = HumanoidDemoEnv(cfg[\"xml_path\"], demo_states, demo_actions, cfg)\n",
+        "model = PPO.load(\"humanoid_trained_model\", env=env)\n",
+        "\n",
+        "print(\"✅ Model loaded successfully!\")\n",
+        "print(\"🎬 Starting viewer... (Press Ctrl+C to stop)\")\n",
+        "\n",
+        "# Disable imitation, use trained policy\n",
+        "env.use_imitation = False\n",
+        "obs, _ = env.reset()\n",
+        "\n",
+        "try:\n",
+        "    for i in range(5000):  # Run for 5000 steps\n",
+        "        action, _ = model.predict(obs, deterministic=True)\n",
+        "        obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "        \n",
+        "        # This will show the viewer popup on macOS when run with mjpython\n",
+        "        env.render()\n",
+        "        time.sleep(0.02)  # Small delay for real-time viewing\n",
+        "        \n",
+        "        if terminated or truncated:\n",
+        "            print(f\"Episode ended at step {i}, restarting...\")\n",
+        "            obs, _ = env.reset()\n",
+        "            \n",
+        "        if i % 500 == 0:\n",
+        "            print(f\"Step {i}/5000 - Reward: {reward:.3f}\")\n",
+        "            \n",
+        "except KeyboardInterrupt:\n",
+        "    print(\"\\\\n🛑 Viewer stopped by user\")\n",
+        "    \n",
+        "print(\"✅ Viewer session completed!\")\n",
+        "'''\n",
+        "    \n",
+        "    with open('viewer_humanoid.py', 'w') as f:\n",
+        "        f.write(script)\n",
+        "    \n",
+        "    print(\"✅ Created viewer_humanoid.py\")\n",
+        "    print(\"\\\\n🎬 To run the viewer, execute in terminal:\")\n",
+        "    print(\"mjpython viewer_humanoid.py\")\n",
+        "    print(\"\\\\n💡 This will open the MuJoCo viewer window showing your trained humanoid!\")\n",
+        "\n",
+        "# Create the script\n",
+        "create_viewer_script()\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Setup and Imports\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import numpy as np\n",
+        "import yaml\n",
+        "import time\n",
+        "from stable_baselines3 import PPO\n",
+        "from stable_baselines3.common.vec_env import DummyVecEnv\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "\n",
+        "# Load configuration\n",
+        "with open('config.yaml', 'r') as f:\n",
+        "    config = yaml.safe_load(f)\n",
+        "\n",
+        "print(\"✅ Imports loaded successfully\")\n",
+        "print(f\"Config: {config}\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Load Expert Demonstrations\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 11,
+      "metadata": {},
+      "outputs": [
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "✅ Loaded 1000 demonstration steps\n",
+            "State shape: (18,)\n",
+            "Action shape: (18,)\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Load expert demonstrations\n",
+        "demo_states, demo_actions = load_demonstrations(config['csv_path'])\n",
+        "\n",
+        "print(f\"✅ Loaded {len(demo_states)} demonstration steps\")\n",
+        "print(f\"State shape: {demo_states[0].shape}\")\n",
+        "print(f\"Action shape: {demo_actions[0].shape}\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Create Environment\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Create environment\n",
+        "env = HumanoidDemoEnv(config['xml_path'], demo_states, demo_actions, config)\n",
+        "\n",
+        "# Test environment\n",
+        "obs, info = env.reset()\n",
+        "print(f\"✅ Environment created successfully\")\n",
+        "print(f\"Observation shape: {obs.shape}\")\n",
+        "print(f\"Action space: {env.action_space}\")\n",
+        "\n",
+        "# NOTE: For macOS users - viewer popup requires mjpython\n",
+        "# env.render()  # This may not work in Jupyter on macOS\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Train PPO Model\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Create PPO model\n",
+        "model = PPO(\n",
+        "    \"MlpPolicy\", \n",
+        "    env,\n",
+        "    learning_rate=3e-4,\n",
+        "    n_steps=2048,\n",
+        "    batch_size=64,\n",
+        "    n_epochs=10,\n",
+        "    gamma=0.99,\n",
+        "    gae_lambda=0.95,\n",
+        "    clip_range=0.2,\n",
+        "    verbose=1,\n",
+        "    tensorboard_log=\"./tensorboard/\"\n",
+        ")\n",
+        "\n",
+        "print(\"✅ PPO model created\")\n",
+        "print(f\"Policy: {model.policy}\")\n",
+        "\n",
+        "# Train the model\n",
+        "print(\"🎯 Starting training...\")\n",
+        "try:\n",
+        "    # Try with progress bar first (requires tqdm and rich)\n",
+        "    model.learn(total_timesteps=50000, progress_bar=True)\n",
+        "except ImportError:\n",
+        "    # Fallback without progress bar if packages not available\n",
+        "    print(\"⚠️ Progress bar not available, training without it...\")\n",
+        "    model.learn(total_timesteps=50000, progress_bar=False)\n",
+        "\n",
+        "# Save the model\n",
+        "model.save(\"humanoid_trained_model\")\n",
+        "print(\"✅ Model trained and saved!\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Test Trained Model\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Test the trained model\n",
+        "print(\"🧪 Testing trained model...\")\n",
+        "\n",
+        "obs, _ = env.reset()\n",
+        "total_reward = 0\n",
+        "\n",
+        "for i in range(1000):\n",
+        "    action, _ = model.predict(obs, deterministic=True)\n",
+        "    obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "    total_reward += reward\n",
+        "    \n",
+        "    # NOTE: Uncomment for viewer (requires mjpython on macOS)\n",
+        "    # env.render()\n",
+        "    # time.sleep(0.01)\n",
+        "    \n",
+        "    if terminated or truncated:\n",
+        "        print(f\"Episode ended at step {i}, total reward: {total_reward}\")\n",
+        "        obs, _ = env.reset()\n",
+        "        total_reward = 0\n",
+        "\n",
+        "print(\"✅ Testing completed\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## To See the Viewer Popup on macOS\n",
+        "\n",
+        "Since you're on macOS, the MuJoCo viewer requires special handling. Run this command in your terminal to see the visualization:\n",
+        "\n",
+        "```bash\n",
+        "cd humanoid_model_project/test2\n",
+        "mjpython -c \"\n",
+        "from stable_baselines3 import PPO\n",
+        "import yaml\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "import time\n",
+        "\n",
+        "# Load everything\n",
+        "with open('config.yaml') as f: cfg = yaml.safe_load(f)\n",
+        "demo_states, demo_actions = load_demonstrations(cfg['csv_path'])\n",
+        "env = HumanoidDemoEnv(cfg['xml_path'], demo_states, demo_actions, cfg)\n",
+        "model = PPO.load('humanoid_trained_model', env=env)\n",
+        "\n",
+        "# Run with viewer\n",
+        "obs, _ = env.reset()\n",
+        "for i in range(2000):\n",
+        "    action, _ = model.predict(obs, deterministic=True)\n",
+        "    obs, r, t, tr, _ = env.step(action)\n",
+        "    env.render()  # This will show the popup viewer\n",
+        "    time.sleep(0.02)\n",
+        "    if t or tr:\n",
+        "        obs, _ = env.reset()\n",
+        "\"\n",
+        "```\n",
+        "\n",
+        "This will open the MuJoCo viewer window showing your trained humanoid in action!\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## View Trained Model in Action\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# View the trained humanoid in action\n",
+        "import subprocess\n",
+        "import sys\n",
+        "import platform\n",
+        "\n",
+        "def view_humanoid_trained():\n",
+        "    \"\"\"Run the trained humanoid with viewer - tries multiple approaches\"\"\"\n",
+        "    \n",
+        "    print(\"🎬 Starting humanoid viewer...\")\n",
+        "    \n",
+        "    # Approach 1: Try direct viewer in Jupyter (may not work on macOS)\n",
+        "    try:\n",
+        "        print(\"🔍 Attempting direct viewer...\")\n",
+        "        env.use_imitation = False  # Use trained policy, not demonstrations\n",
+        "        obs, _ = env.reset()\n",
+        "        \n",
+        "        # Try to render directly\n",
+        "        for i in range(100):  # Short test first\n",
+        "            action, _ = model.predict(obs, deterministic=True)\n",
+        "            obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "            \n",
+        "            try:\n",
+        "                env.render()  # This might work in some cases\n",
+        "                time.sleep(0.02)\n",
+        "            except Exception as render_error:\n",
+        "                print(f\"⚠️ Direct rendering failed: {render_error}\")\n",
+        "                break\n",
+        "                \n",
+        "            if terminated or truncated:\n",
+        "                obs, _ = env.reset()\n",
+        "        \n",
+        "        print(\"✅ Direct viewer worked!\")\n",
+        "        return True\n",
+        "        \n",
+        "    except Exception as e:\n",
+        "        print(f\"❌ Direct viewer failed: {e}\")\n",
+        "        \n",
+        "        # Approach 2: Use subprocess to call mjpython (macOS solution)\n",
+        "        if platform.system() == \"Darwin\":  # macOS\n",
+        "            print(\"🍎 macOS detected - trying mjpython subprocess...\")\n",
+        "            try:\n",
+        "                # Create a temporary script\n",
+        "                script_content = '''\n",
+        "from stable_baselines3 import PPO\n",
+        "import yaml\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "import time\n",
+        "\n",
+        "# Load everything\n",
+        "with open(\"config.yaml\") as f: \n",
+        "    cfg = yaml.safe_load(f)\n",
+        "demo_states, demo_actions = load_demonstrations(cfg[\"csv_path\"])\n",
+        "env = HumanoidDemoEnv(cfg[\"xml_path\"], demo_states, demo_actions, cfg)\n",
+        "model = PPO.load(\"humanoid_trained_model\", env=env)\n",
+        "\n",
+        "# Run with viewer\n",
+        "env.use_imitation = False\n",
+        "obs, _ = env.reset()\n",
+        "print(\"🎬 Viewer window should open now...\")\n",
+        "\n",
+        "for i in range(2000):\n",
+        "    action, _ = model.predict(obs, deterministic=True)\n",
+        "    obs, r, t, tr, _ = env.step(action)\n",
+        "    env.render()\n",
+        "    time.sleep(0.02)\n",
+        "    if t or tr:\n",
+        "        obs, _ = env.reset()\n",
+        "        \n",
+        "print(\"✅ Viewer session completed!\")\n",
+        "'''\n",
+        "                \n",
+        "                with open('temp_viewer.py', 'w') as f:\n",
+        "                    f.write(script_content)\n",
+        "                \n",
+        "                print(\"📱 Launching mjpython viewer (this will open a new window)...\")\n",
+        "                result = subprocess.run(['mjpython', 'temp_viewer.py'], \n",
+        "                                      capture_output=True, text=True, timeout=30)\n",
+        "                \n",
+        "                if result.returncode == 0:\n",
+        "                    print(\"✅ mjpython viewer launched successfully!\")\n",
+        "                    print(\"🎬 Check for the MuJoCo viewer window!\")\n",
+        "                else:\n",
+        "                    print(f\"❌ mjpython failed: {result.stderr}\")\n",
+        "                    raise Exception(\"mjpython not available\")\n",
+        "                    \n",
+        "                # Clean up\n",
+        "                import os\n",
+        "                if os.path.exists('temp_viewer.py'):\n",
+        "                    os.remove('temp_viewer.py')\n",
+        "                    \n",
+        "                return True\n",
+        "                \n",
+        "            except FileNotFoundError:\n",
+        "                print(\"❌ mjpython not found. Install with: pip install mujoco[viewer]\")\n",
+        "            except subprocess.TimeoutExpired:\n",
+        "                print(\"⏰ mjpython viewer timed out - but it might still be running!\")\n",
+        "                return True\n",
+        "            except Exception as subprocess_error:\n",
+        "                print(f\"❌ mjpython subprocess failed: {subprocess_error}\")\n",
+        "        \n",
+        "        # Approach 3: Offscreen rendering with display\n",
+        "        print(\"🖼️ Falling back to offscreen rendering...\")\n",
+        "        try:\n",
+        "            import matplotlib.pyplot as plt\n",
+        "            import mujoco\n",
+        "            \n",
+        "            # Create offscreen renderer\n",
+        "            renderer = mujoco.Renderer(env.model, width=640, height=480)\n",
+        "            \n",
+        "            env.use_imitation = False\n",
+        "            obs, _ = env.reset()\n",
+        "            \n",
+        "            print(\"📸 Rendering frames (this may take a moment)...\")\n",
+        "            frames = []\n",
+        "            \n",
+        "            for i in range(100):  # Render 100 frames\n",
+        "                action, _ = model.predict(obs, deterministic=True)\n",
+        "                obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "                \n",
+        "                # Render frame\n",
+        "                renderer.update_scene(env.data)\n",
+        "                pixels = renderer.render()\n",
+        "                frames.append(pixels)\n",
+        "                \n",
+        "                if terminated or truncated:\n",
+        "                    obs, _ = env.reset()\n",
+        "            \n",
+        "            # Display first frame\n",
+        "            plt.figure(figsize=(10, 8))\n",
+        "            plt.imshow(frames[0])\n",
+        "            plt.title(\"Humanoid Simulation (First Frame)\")\n",
+        "            plt.axis('off')\n",
+        "            plt.show()\n",
+        "            \n",
+        "            print(f\"✅ Rendered {len(frames)} frames successfully!\")\n",
+        "            print(\"💡 First frame displayed above. For animation, use the mjpython method.\")\n",
+        "            \n",
+        "            renderer.close()\n",
+        "            return True\n",
+        "            \n",
+        "        except Exception as render_error:\n",
+        "            print(f\"❌ Offscreen rendering failed: {render_error}\")\n",
+        "    \n",
+        "    return False\n",
+        "\n",
+        "# Run the viewer\n",
+        "success = view_humanoid_trained()\n",
+        "\n",
+        "if not success:\n",
+        "    print(\"\\n🔧 Manual solution:\")\n",
+        "    print(\"Run this in your terminal:\")\n",
+        "    print(\"cd humanoid_model_project/test2\")\n",
+        "    print(\"mjpython viewer_humanoid.py\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Alternative: Simple Viewer Test\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Simple viewer test - run this if the above doesn't work\n",
+        "import os\n",
+        "\n",
+        "def create_viewer_script():\n",
+        "    \"\"\"Create a standalone viewer script you can run with mjpython\"\"\"\n",
+        "    script = '''#!/usr/bin/env python3\n",
+        "from stable_baselines3 import PPO\n",
+        "import yaml\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "import time\n",
+        "\n",
+        "print(\"🚀 Loading trained humanoid model...\")\n",
+        "\n",
+        "# Load everything\n",
+        "with open(\"config.yaml\") as f: \n",
+        "    cfg = yaml.safe_load(f)\n",
+        "    \n",
+        "demo_states, demo_actions = load_demonstrations(cfg[\"csv_path\"])\n",
+        "env = HumanoidDemoEnv(cfg[\"xml_path\"], demo_states, demo_actions, cfg)\n",
+        "model = PPO.load(\"humanoid_trained_model\", env=env)\n",
+        "\n",
+        "print(\"✅ Model loaded successfully!\")\n",
+        "print(\"🎬 Starting viewer... (Press Ctrl+C to stop)\")\n",
+        "\n",
+        "# Disable imitation, use trained policy\n",
+        "env.use_imitation = False\n",
+        "obs, _ = env.reset()\n",
+        "\n",
+        "try:\n",
+        "    for i in range(5000):  # Run for 5000 steps\n",
+        "        action, _ = model.predict(obs, deterministic=True)\n",
+        "        obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "        \n",
+        "        # This will show the viewer popup on macOS when run with mjpython\n",
+        "        env.render()\n",
+        "        time.sleep(0.02)  # Small delay for real-time viewing\n",
+        "        \n",
+        "        if terminated or truncated:\n",
+        "            print(f\"Episode ended at step {i}, restarting...\")\n",
+        "            obs, _ = env.reset()\n",
+        "            \n",
+        "        if i % 500 == 0:\n",
+        "            print(f\"Step {i}/5000 - Reward: {reward:.3f}\")\n",
+        "            \n",
+        "except KeyboardInterrupt:\n",
+        "    print(\"\\\\n🛑 Viewer stopped by user\")\n",
+        "    \n",
+        "print(\"✅ Viewer session completed!\")\n",
+        "'''\n",
+        "    \n",
+        "    with open('viewer_humanoid.py', 'w') as f:\n",
+        "        f.write(script)\n",
+        "    \n",
+        "    print(\"✅ Created viewer_humanoid.py\")\n",
+        "    print(\"\\\\n🎬 To run the viewer, execute in terminal:\")\n",
+        "    print(\"mjpython viewer_humanoid.py\")\n",
+        "    print(\"\\\\n💡 This will open the MuJoCo viewer window showing your trained humanoid!\")\n",
+        "\n",
+        "# Create the script\n",
+        "create_viewer_script()\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "# Humanoid Training with MuJoCo\n",
+        "\n",
+        "This notebook demonstrates training a humanoid model using reinforcement learning in MuJoCo.\n",
+        "\n",
+        "**IMPORTANT**: If you get a dimension mismatch error, **restart your kernel** first! The environment has been updated to handle the dimension mismatch.\n",
+        "\n",
+        "**For macOS users**: The MuJoCo viewer popup requires `mjpython` instead of regular `python`. To see the viewer:\n",
+        "- Install: `pip install mujoco[viewer]`\n",
+        "- Run with: `mjpython` instead of `python` for scripts\n",
+        "- For Jupyter: The viewer may not work properly; use offscreen rendering instead\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "# Humanoid Training with MuJoCo\n",
+        "\n",
+        "This notebook demonstrates training a humanoid model using reinforcement learning in MuJoCo.\n",
+        "\n",
+        "**Important for macOS users**: The MuJoCo viewer popup requires `mjpython` instead of regular `python`. To see the viewer:\n",
+        "- Install: `pip install mujoco[viewer]`\n",
+        "- Run with: `mjpython` instead of `python` for scripts\n",
+        "- For Jupyter: The viewer may not work properly; use offscreen rendering instead\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Setup and Imports\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import numpy as np\n",
+        "import yaml\n",
+        "import time\n",
+        "from stable_baselines3 import PPO\n",
+        "from stable_baselines3.common.vec_env import DummyVecEnv\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "\n",
+        "# Load configuration\n",
+        "with open('config.yaml', 'r') as f:\n",
+        "    config = yaml.safe_load(f)\n",
+        "\n",
+        "print(\"✅ Imports loaded successfully\")\n",
+        "print(f\"Config: {config}\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Load Expert Demonstrations\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Load expert demonstrations\n",
+        "demo_states, demo_actions = load_demonstrations(config['csv_path'])\n",
+        "\n",
+        "print(f\"✅ Loaded {len(demo_states)} demonstration steps\")\n",
+        "print(f\"State shape: {demo_states[0].shape}\")\n",
+        "print(f\"Action shape: {demo_actions[0].shape}\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Create Environment\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Create environment\n",
+        "env = HumanoidDemoEnv(config['xml_path'], demo_states, demo_actions, config)\n",
+        "\n",
+        "# Test environment\n",
+        "obs, info = env.reset()\n",
+        "print(f\"✅ Environment created successfully\")\n",
+        "print(f\"Observation shape: {obs.shape}\")\n",
+        "print(f\"Action space: {env.action_space}\")\n",
+        "\n",
+        "# NOTE: For macOS users - viewer popup requires mjpython\n",
+        "# env.render()  # This may not work in Jupyter on macOS\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Train PPO Model\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Create PPO model\n",
+        "model = PPO(\n",
+        "    \"MlpPolicy\", \n",
+        "    env,\n",
+        "    learning_rate=3e-4,\n",
+        "    n_steps=2048,\n",
+        "    batch_size=64,\n",
+        "    n_epochs=10,\n",
+        "    gamma=0.99,\n",
+        "    gae_lambda=0.95,\n",
+        "    clip_range=0.2,\n",
+        "    verbose=1,\n",
+        "    tensorboard_log=\"./tensorboard/\"\n",
+        ")\n",
+        "\n",
+        "print(\"✅ PPO model created\")\n",
+        "print(f\"Policy: {model.policy}\")\n",
+        "\n",
+        "# Train the model\n",
+        "print(\"🎯 Starting training...\")\n",
+        "model.learn(total_timesteps=50000, progress_bar=True)\n",
+        "\n",
+        "# Save the model\n",
+        "model.save(\"humanoid_trained_model\")\n",
+        "print(\"✅ Model trained and saved!\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## Test Trained Model\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Test the trained model\n",
+        "print(\"🧪 Testing trained model...\")\n",
+        "\n",
+        "obs, _ = env.reset()\n",
+        "total_reward = 0\n",
+        "\n",
+        "for i in range(1000):\n",
+        "    action, _ = model.predict(obs, deterministic=True)\n",
+        "    obs, reward, terminated, truncated, _ = env.step(action)\n",
+        "    total_reward += reward\n",
+        "    \n",
+        "    # NOTE: Uncomment for viewer (requires mjpython on macOS)\n",
+        "    # env.render()\n",
+        "    # time.sleep(0.01)\n",
+        "    \n",
+        "    if terminated or truncated:\n",
+        "        print(f\"Episode ended at step {i}, total reward: {total_reward}\")\n",
+        "        obs, _ = env.reset()\n",
+        "        total_reward = 0\n",
+        "\n",
+        "print(\"✅ Testing completed\")\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {
+        "vscode": {
+          "languageId": "raw"
+        }
+      },
+      "source": [
+        "## To See the Viewer Popup on macOS\n",
+        "\n",
+        "Since you're on macOS, the MuJoCo viewer requires special handling. Run this command in your terminal to see the visualization:\n",
+        "\n",
+        "```bash\n",
+        "cd humanoid_model_project/test2\n",
+        "mjpython -c \"\n",
+        "from stable_baselines3 import PPO\n",
+        "import yaml\n",
+        "from data_loader import load_demonstrations\n",
+        "from humanoid_demo_env import HumanoidDemoEnv\n",
+        "import time\n",
+        "\n",
+        "# Load everything\n",
+        "with open('config.yaml') as f: cfg = yaml.safe_load(f)\n",
+        "demo_states, demo_actions = load_demonstrations(cfg['csv_path'])\n",
+        "env = HumanoidDemoEnv(cfg['xml_path'], demo_states, demo_actions, cfg)\n",
+        "model = PPO.load('humanoid_trained_model', env=env)\n",
+        "\n",
+        "# Run with viewer\n",
+        "obs, _ = env.reset()\n",
+        "for i in range(2000):\n",
+        "    action, _ = model.predict(obs, deterministic=True)\n",
+        "    obs, r, t, tr, _ = env.step(action)\n",
+        "    env.render()  # This will show the popup viewer\n",
+        "    time.sleep(0.02)\n",
+        "    if t or tr:\n",
+        "        obs, _ = env.reset()\n",
+        "\"\n",
+        "```\n",
+        "\n",
+        "This will open the MuJoCo viewer window showing your trained humanoid in action!\n"
+      ]
+    },
+    {
+      "cell_type": "raw",
+      "metadata": {},
+      "source": []
+    }
+  ],
+  "metadata": {
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 2
+}

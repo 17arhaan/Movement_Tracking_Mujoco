@@ -1,0 +1,7 @@
+numpy
+pandas
+tensorflow
+mujoco
+flask
+matplotlib
+flask-cors
